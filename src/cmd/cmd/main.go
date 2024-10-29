@@ -8,6 +8,7 @@ import (
 	"xuan/src/cmd"
 	"xuan/src/generator"
 	"xuan/src/parser"
+	"xuan/src/parser/sheet"
 )
 
 func main() {
@@ -85,6 +86,9 @@ func main() {
 	parser, err := parser.NewExcelFileParser(sourceFilePath, datastore)
 	cmd.PanicIfNotNil(err)
 
+	parser.AddParser(&sheet.AllInOneParser{})
+	parser.AddParser(&sheet.WKB2Parser{})
+	
 	cmd.PanicIfNotNil(parser.Parse())
 
 	gen := generator.NewExcelGenerator(datastore, targets)

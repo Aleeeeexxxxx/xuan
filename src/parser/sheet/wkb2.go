@@ -1,9 +1,13 @@
-package parser
+package sheet
 
 import "xuan/src"
 
 type WKB2Parser struct {
 	datastore src.Datastore
+}
+
+func (parser *WKB2Parser) HeaderSize() int {
+	return 3
 }
 
 func (parser *WKB2Parser) SheetName() string {
@@ -20,7 +24,7 @@ func (parser *WKB2Parser) ParseRow(index int, data []string) error {
 		return nil
 	}
 
-	p, _ := parser.GetProductCreateIfNotExist(model)
+	p, _ := GetProductCreateIfNotExist(model, parser.datastore)
 
 	p.Core = &src.IPCore{
 		Name:     data[6],
@@ -65,13 +69,16 @@ func (parser *WKB2Parser) ParseRow(index int, data []string) error {
 	}
 
 	// 流片 == 晶圆
+	if p.Process == nil {
+		p.Process = &src.Process{}
+	}
 	p.Process.Domestic = p.Wafer.Domestic
 
 	return parser.datastore.AddProduct(p)
 }
 
-func (parser *WKB2Parser) GetProductCreateIfNotExist(model string) (*src.Product, error) {
-	p, err := parser.datastore.GetProduct(model)
+func GetProductCreateIfNotExist(model string, datastore src.Datastore) (*src.Product, error) {
+	p, err := datastore.GetProduct(model)
 	if err != nil {
 		if err == src.ErrorProductNotFound {
 			p = &src.Product{

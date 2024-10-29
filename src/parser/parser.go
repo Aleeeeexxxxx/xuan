@@ -10,6 +10,8 @@ type RowBasedSheetParser interface {
 	SheetName() string
 	ParseRow(index int, row []string) error
 
+	HeaderSize() int
+
 	SetStorage(datastore src.Datastore)
 }
 
@@ -55,7 +57,13 @@ func (parser *ExcelFileParser) runParser(p RowBasedSheetParser) error {
 		return err
 	}
 
+	header := p.HeaderSize()
+
 	for index, row := range raw {
+		if index < header {
+			continue
+		}
+
 		if err := p.ParseRow(index, row); err != nil {
 			return err
 		}
