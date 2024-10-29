@@ -53,12 +53,18 @@ func (gen *ExcelGenerator) genSheet(factory TableGeneratorFactory) error {
 	records = append(records, header)
 
 	for index, target := range gen.targets {
-		if p, err := gen.datastore.GetProduct(target); err != nil {
-			records = append(records, tg.GenBodyForProduct(index, p)...)
-			gen.plugin.GenOneProduct(target)
-		} else {
-			gen.plugin.ProductNotFound(target)
+		p, err := gen.datastore.GetProduct(target)
+		if err != nil {
+			if err == src.ErrorProductNotFound {
+				gen.plugin.ProductNotFound(target)
+				continue
+			} else {
+				return err
+			}
 		}
+
+		records = append(records, tg.GenBodyForProduct(index, p)...)
+		gen.plugin.GenOneProduct(target)
 	}
 
 	gen.ex.AddSheet(excel.Sheet{
