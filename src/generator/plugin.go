@@ -12,30 +12,10 @@ type Plugin interface {
 	Gen(*excel.Excel)
 }
 
-type NotFoundItem struct {
-	Name    string
-	Similar []string
-}
-
-func (item NotFoundItem) ToExcelRows() excel.ExcelRow {
-	relatedItems := excel.Cell{}
-	for _, i := range item.Similar {
-		relatedItems.Data = append(relatedItems.Data, i)
-	}
-
-	return &excel.MultiLineRow{
-		Cells: []excel.Cell{
-			{Data: []interface{}{""}},
-			{Data: []interface{}{item.Name}},
-			relatedItems,
-		},
-	}
-}
-
 type SheetStatistic struct {
 	SheetName string
 	Generated int
-	NotFound  []NotFoundItem
+	NotFound  []string
 }
 
 func (stat *SheetStatistic) ToExcelRows() []excel.ExcelRow {
@@ -49,7 +29,12 @@ func (stat *SheetStatistic) ToExcelRows() []excel.ExcelRow {
 
 	if len(stat.NotFound) > 0 {
 		for _, item := range stat.NotFound {
-			ret = append(ret, item.ToExcelRows())
+			ret = append(ret, &excel.MultiLineRow{
+				Cells: []excel.Cell{
+					{Data: []interface{}{""}},
+					{Data: []interface{}{item}},
+				},
+			})
 		}
 	}
 	return ret
@@ -80,7 +65,7 @@ func (s *Statisticer) GenOneProduct(name string) {
 }
 
 func (s *Statisticer) ProductNotFound(name string) {
-	s.cur.NotFound = append(s.cur.NotFound, NotFoundItem{Name: name})
+	s.cur.NotFound = append(s.cur.NotFound, name)
 }
 
 func (s *Statisticer) Gen(ex *excel.Excel) {
