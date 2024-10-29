@@ -1,27 +1,28 @@
-package main
+package generator
 
 import (
-	"log"
+	"xuan/src"
+	"xuan/src/excel"
 )
 
-type WKBTableGenerator struct {
-	Source  *Source
-	Targets []string
+type TableGenerator interface {
+	SheetName() string
+	GenHeader() excel.ExcelRow
+	GenBodyForProduct(index int, product *src.Product) []excel.ExcelRow
 }
 
-func NewWKBTableGenerator(Source *Source, Targets []string) TableGenerator {
-	return &WKBTableGenerator{
-		Source:  Source,
-		Targets: Targets,
-	}
+type WKBTableGenerator struct{}
+
+func NewWKBTableGenerator(_ ...interface{}) TableGenerator {
+	return &WKBTableGenerator{}
 }
 
 func (gen WKBTableGenerator) SheetName() string {
 	return "伪、空、包审查信息一览表"
 }
 
-func (gen WKBTableGenerator) GenHeader() ExcelRow {
-	return &OneLineRow{
+func (gen WKBTableGenerator) GenHeader() excel.ExcelRow {
+	return &excel.OneLineRow{
 		Data: []interface{}{
 			"序号",
 			"元器件名称",
@@ -39,8 +40,8 @@ func (gen WKBTableGenerator) GenHeader() ExcelRow {
 	}
 }
 
-func (gen WKBTableGenerator) GenBodyForProduct(index int, p *Product) []ExcelRow {
-	return []ExcelRow{&OneLineRow{
+func (gen WKBTableGenerator) GenBodyForProduct(index int, p *src.Product) []excel.ExcelRow {
+	return []excel.ExcelRow{&excel.OneLineRow{
 		Data: []interface{}{
 			index + 1,
 			p.Name,
@@ -59,23 +60,18 @@ func (gen WKBTableGenerator) GenBodyForProduct(index int, p *Product) []ExcelRow
 }
 
 type BasicTableGenerator struct {
-	Source  *Source
-	Targets []string
 }
 
-func NewBasicTableGenerator(Source *Source, Targets []string) TableGenerator {
-	return &BasicTableGenerator{
-		Source:  Source,
-		Targets: Targets,
-	}
+func NewBasicTableGenerator(_ ...interface{}) TableGenerator {
+	return &BasicTableGenerator{}
 }
 
 func (gen BasicTableGenerator) SheetName() string {
 	return "电子元器件基本信息表"
 }
 
-func (gen BasicTableGenerator) GenHeader() ExcelRow {
-	return &OneLineRow{
+func (gen BasicTableGenerator) GenHeader() excel.ExcelRow {
+	return &excel.OneLineRow{
 		Data: []interface{}{
 			"序号",
 			"元器件名称",
@@ -95,8 +91,8 @@ func (gen BasicTableGenerator) GenHeader() ExcelRow {
 	}
 }
 
-func (gen BasicTableGenerator) GenBodyForProduct(index int, p *Product) []ExcelRow {
-	var cells []Cell = []Cell{
+func (gen BasicTableGenerator) GenBodyForProduct(index int, p *src.Product) []excel.ExcelRow {
+	var cells []excel.Cell = []excel.Cell{
 		{Data: []interface{}{index + 1}},
 		{Data: []interface{}{p.Name}},
 		{Data: []interface{}{p.Model}},
@@ -107,16 +103,16 @@ func (gen BasicTableGenerator) GenBodyForProduct(index int, p *Product) []ExcelR
 		{Data: []interface{}{p.Core.Domestic}},
 	}
 
-	var component []Cell
+	var component []excel.Cell
 	if p.Frame != nil {
-		component = []Cell{
+		component = []excel.Cell{
 			{Data: []interface{}{"晶圆", "框架/基板", "键合丝"}},
 			{Data: []interface{}{p.Wafer.Important, p.Frame.Important, p.BondingWires.Important}},
 			{Data: []interface{}{p.Wafer.Source, p.Frame.Source, p.BondingWires.Source}},
 			{Data: []interface{}{p.Wafer.Domestic, p.Frame.Domestic, p.BondingWires.Domestic}},
 		}
 	} else {
-		component = []Cell{
+		component = []excel.Cell{
 			{Data: []interface{}{"晶圆", "管壳/盖板", "键合丝"}},
 			{Data: []interface{}{p.Wafer.Important, p.TubeShell.Important, p.BondingWires.Important}},
 			{Data: []interface{}{p.Wafer.Source, p.TubeShell.Source, p.BondingWires.Source}},
@@ -125,49 +121,11 @@ func (gen BasicTableGenerator) GenBodyForProduct(index int, p *Product) []ExcelR
 	}
 	cells = append(cells, component...)
 
-	cells = append(cells, []Cell{
+	cells = append(cells, []excel.Cell{
 		{Data: []interface{}{p.Process.Name}},
 		{Data: []interface{}{p.Process.Domestic}},
 		{Data: []interface{}{"无"}},
 	}...)
 
-	return []ExcelRow{&MultiLineRow{Cells: cells}}
-}
-
-type TableGenerator interface {
-	SheetName() string
-	GenHeader() ExcelRow
-	GenBodyForProduct(index int, product *Product) []ExcelRow
-}
-
-type GenFactory func(source *Source, targets []string) TableGenerator
-
-func GenTable(source *Source, targets []string, factory GenFactory) Sheet {
-	var records []ExcelRow
-	var notFound []NotFoundItem
-
-	gen := factory(source, targets)
-
-	records = append(records, gen.GenHeader())
-	for index, target := range targets {
-		if p, ok := source.Products[target]; ok {
-			records = append(records, gen.GenBodyForProduct(index, p)...)
-		} else {
-			log.Printf("product not found %s\n", target)
-			notFound = append(notFound, NotFoundItem{
-				Name:         target,
-				RelatedItems: FoundRelatedItems(target, source.ParsedProducts()),
-			})
-		}
-	}
-
-	return Sheet{
-		Desc: Description{
-			Total:         len(targets),
-			Found:         len(records),
-			NotFoundItems: notFound,
-		},
-		Name: gen.SheetName(),
-		Rows: records,
-	}
+	return []excel.ExcelRow{&excel.MultiLineRow{Cells: cells}}
 }
