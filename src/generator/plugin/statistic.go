@@ -24,7 +24,7 @@ type Statisticer struct {
 	cur   *SheetStatistic
 	stats map[string]*SheetStatistic
 
-	NotFound []string
+	NotFound map[string]struct{}
 }
 
 func NewStatisticer() *Statisticer {
@@ -49,15 +49,16 @@ func (s *Statisticer) GenOneProduct(name string) {
 
 func (s *Statisticer) ProductNotFound(name string) {
 	s.cur.Total++
-	s.NotFound = append(s.NotFound, name)
+	s.NotFound[name] = struct{}{}
 }
 
 func (s *Statisticer) Gen(ex *excel.Excel) {
 	var ret []excel.ExcelRow
 
-	ret = append(ret, &excel.OneLineRow{Data: []interface{}{"NotFound:", s.NotFound}})
+	ret = append(ret, &excel.OneLineRow{Data: []interface{}{"NotFound:", len(s.NotFound)}})
+
 	if len(s.NotFound) > 0 {
-		for _, item := range s.NotFound {
+		for item, _  := range s.NotFound {
 			ret = append(ret, &excel.MultiLineRow{
 				Cells: []excel.Cell{
 					{Data: []interface{}{""}},
