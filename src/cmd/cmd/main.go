@@ -7,6 +7,7 @@ import (
 	"xuan/src"
 	"xuan/src/cmd"
 	"xuan/src/generator"
+	"xuan/src/generator/table"
 	"xuan/src/parser"
 	"xuan/src/parser/sheet"
 )
@@ -88,12 +89,12 @@ func main() {
 
 	parser.AddParser(&sheet.AllInOneParser{})
 	parser.AddParser(&sheet.WKB2Parser{})
-	
+
 	cmd.PanicIfNotNil(parser.Parse())
 
 	gen := generator.NewExcelGenerator(datastore, targets)
-	gen.AddTable(generator.NewBasicTableGenerator)
-	gen.AddTable(generator.NewWKBTableGenerator)
+	gen.AddTable(table.NewBasicTableGenerator)
+	gen.AddTable(table.NewWKBTableGenerator)
 
 	excel, err := gen.Gen()
 	cmd.PanicIfNotNil(err)

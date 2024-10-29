@@ -10,13 +10,13 @@ import (
 const defaultSheet = "sheet1"
 
 type Excel struct {
-	DefaultSheet Sheet
-	Sheets       []Sheet
+	DefaultSheet *Sheet
+	Sheets       []*Sheet
 }
 
 func NewExcel() *Excel {
 	return &Excel{
-		DefaultSheet: Sheet{
+		DefaultSheet: &Sheet{
 			Name: defaultSheet,
 		},
 	}
@@ -47,5 +47,5 @@ func (excel *Excel) AddRowsToDefaultSheet(rows []ExcelRow) {
 }
 
 func (excel *Excel) AddSheet(sheet Sheet) {
-	excel.Sheets = append(excel.Sheets, sheet)
+	excel.Sheets = append(excel.Sheets, &sheet)
 }

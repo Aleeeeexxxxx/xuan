@@ -3,18 +3,18 @@ package generator
 import (
 	"xuan/src"
 	"xuan/src/excel"
+	"xuan/src/generator/plugin"
+	"xuan/src/generator/table"
 )
-
-type TableGeneratorFactory func(args ...interface{}) TableGenerator
 
 type ExcelGenerator struct {
 	datastore src.Datastore
 	targets   []string
 
-	genFactory []TableGeneratorFactory
+	genFactory []table.TableGeneratorFactory
 
 	ex     *excel.Excel
-	plugin Plugin
+	plugin *plugin.PluginMngr
 }
 
 func NewExcelGenerator(datastore src.Datastore, targets []string) *ExcelGenerator {
@@ -22,16 +22,17 @@ func NewExcelGenerator(datastore src.Datastore, targets []string) *ExcelGenerato
 		datastore: datastore,
 		targets:   targets,
 		ex:        excel.NewExcel(),
-		plugin:    NewStatisticer(),
 	}
 	return gen
 }
 
-func (gen *ExcelGenerator) AddTable(factory TableGeneratorFactory) {
+func (gen *ExcelGenerator) AddTable(factory table.TableGeneratorFactory) {
 	gen.genFactory = append(gen.genFactory, factory)
 }
 
 func (gen *ExcelGenerator) Gen() (*excel.Excel, error) {
+	gen.plugin = plugin.NewPluginMngr(gen.datastore, gen.genFactory)
+
 	for _, factory := range gen.genFactory {
 		gen.genSheet(factory)
 	}
@@ -40,7 +41,7 @@ func (gen *ExcelGenerator) Gen() (*excel.Excel, error) {
 	return gen.ex, nil
 }
 
-func (gen *ExcelGenerator) genSheet(factory TableGeneratorFactory) error {
+func (gen *ExcelGenerator) genSheet(factory table.TableGeneratorFactory) error {
 	tg := factory()
 	sheetName := tg.SheetName()
 
