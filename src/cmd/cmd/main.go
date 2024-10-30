@@ -1,20 +1,22 @@
 package main
 
 import (
-	"log"
 	"os"
 
-	"xuan/src"
 	"xuan/src/cmd"
-	"xuan/src/generator"
-	"xuan/src/generator/table"
-	"xuan/src/parser"
-	"xuan/src/parser/sheet"
 )
 
 func main() {
-	const sourceFilePath = "p1_20240920.xlsx"
+	const sourceFilePath = "../../../resource/p1_20240920.xlsx"
 	const output = "output.xlsx"
+
+	sourceFile, err := os.OpenFile(sourceFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	cmd.PanicIfNotNil(err)
+	outputFile, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0644)
+	cmd.PanicIfNotNil(err)
+
+	defer sourceFile.Close()
+	defer outputFile.Close()
 
 	targets := []string{
 		"HWD16T245-B",
@@ -82,28 +84,5 @@ func main() {
 		"HWD1668",
 	}
 
-	datastore := src.NewInMemoryDatastore()
-
-	parser, err := parser.NewExcelFileParser(sourceFilePath, datastore)
-	cmd.PanicIfNotNil(err)
-
-	parser.AddParser(&sheet.AllInOneParser{})
-	parser.AddParser(&sheet.WKB2Parser{})
-
-	cmd.PanicIfNotNil(parser.Parse())
-
-	gen := generator.NewExcelGenerator(datastore, targets)
-	gen.AddTable(table.NewBasicTableGenerator)
-	gen.AddTable(table.NewWKBTableGenerator)
-
-	excel, err := gen.Gen()
-	cmd.PanicIfNotNil(err)
-
-	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY, 0644)
-	cmd.PanicIfNotNil(err)
-	defer file.Close()
-
-	cmd.PanicIfNotNil(excel.Write(file))
-
-	log.Println("Excel file created successfully!")
+	cmd.RunGeneratorOrPanic(sourceFile, outputFile, targets)
 }

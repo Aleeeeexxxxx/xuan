@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"io"
 	"xuan/src"
 
 	"github.com/xuri/excelize/v2"
@@ -16,22 +17,19 @@ type RowBasedSheetParser interface {
 }
 
 type ExcelFileParser struct {
-	filePath string
-
 	f         *excelize.File
 	datastore src.Datastore
 
 	parsers []RowBasedSheetParser
 }
 
-func NewExcelFileParser(filePath string, datastore src.Datastore) (*ExcelFileParser, error) {
-	f, err := excelize.OpenFile(filePath)
+func NewExcelFileParser(file io.Reader, datastore src.Datastore) (*ExcelFileParser, error) {
+	f, err := excelize.OpenReader(file)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ExcelFileParser{
-		filePath:  filePath,
 		f:         f,
 		datastore: datastore,
 	}, nil
